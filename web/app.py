@@ -92,9 +92,11 @@ def inject_globals():
 @app.route("/")
 def home():
     d = get_db()
-    featured = d.execute(
-        "SELECT * FROM listings WHERE rating IS NOT NULL "
-        "ORDER BY reviews DESC LIMIT 12").fetchall()
+    sort = request.args.get("sort", "reviews")
+    order = {"reviews": "reviews DESC", "rating": "rating DESC, reviews DESC",
+             "name": "name ASC"}.get(sort, "reviews DESC")
+    listings = d.execute(
+        f"SELECT * FROM listings ORDER BY {order} LIMIT 60").fetchall()
     cities = d.execute(
         "SELECT city, state, COUNT(*) n FROM listings "
         "GROUP BY city, state ORDER BY n DESC LIMIT 24").fetchall()
@@ -102,8 +104,8 @@ def home():
         "SELECT category, COUNT(*) n FROM listings "
         "WHERE category IS NOT NULL GROUP BY category ORDER BY n DESC").fetchall()
     total = dbmod.count(d)
-    return render_template("index.html", featured=featured, cities=cities,
-                           cats=cats, total=total)
+    return render_template("index.html", listings=listings, cities=cities,
+                           cats=cats, total=total, sort=sort)
 
 
 @app.route("/listing/<slug>")

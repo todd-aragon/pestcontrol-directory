@@ -7,3 +7,5 @@ data/*.json
 !data/us-cities.csv
 .DS_Store
 proxies.txt
+
+.vercel
