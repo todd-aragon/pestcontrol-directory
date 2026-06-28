@@ -1,0 +1,9 @@
+# One proxy per line. Lines starting with # are ignored.
+# Use RESIDENTIAL or MOBILE proxies — datacenter IPs get blocked fast.
+# Copy this file to proxies.txt and fill in real endpoints.
+#
+# Format: scheme://user:pass@host:port
+#
+# http://user-12345:pass@proxy.iproyal.com:12321
+# http://user-12345:pass@gate.smartproxy.com:7000
+# http://user-12345:pass@p.webshare.io:80

@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+data/*.db
+data/*.csv
+data/*.json
+!data/us-cities.csv
+.DS_Store
+proxies.txt

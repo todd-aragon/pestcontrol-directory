@@ -1,0 +1,83 @@
+name: scrape-pestcontrol
+
+# Free nationwide scraping on GitHub's runners. The runner's disposable IP
+# touches Google, never yours. Each run does one batch of jobs, advances a
+# saved offset, and commits the growing SQLite DB back to the repo.
+#
+# Make the repo PUBLIC for unlimited free Actions minutes (private = 2,000/mo).
+
+on:
+  workflow_dispatch:          # run manually from the Actions tab
+    inputs:
+      batch:
+        description: "jobs per run"
+        default: "120"
+      max_results:
+        description: "places per query"
+        default: "10"
+      offset:
+        description: "force a start offset (blank = use saved)"
+        default: ""
+  schedule:
+    - cron: "0 */2 * * *"     # every 2 hours
+
+# never let two runs scrape at once (they'd fight over the DB)
+concurrency:
+  group: scrape
+  cancel-in-progress: false
+
+permissions:
+  contents: write             # to push the DB back
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps + Chromium
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Resolve batch offset
+        id: off
+        run: |
+          TOTAL=$(python -c "import sys; sys.path.insert(0,'scraper'); import targets; print(sum(1 for _ in targets.jobs()))")
+          SAVED=$(cat data/.offset 2>/dev/null || echo 0)
+          FORCED="${{ github.event.inputs.offset }}"
+          OFFSET=${FORCED:-$SAVED}
+          # wrap around when we reach the end -> continuous refresh
+          if [ "$OFFSET" -ge "$TOTAL" ]; then OFFSET=0; fi
+          echo "offset=$OFFSET" >> "$GITHUB_OUTPUT"
+          echo "total=$TOTAL"   >> "$GITHUB_OUTPUT"
+          echo "Batch starts at offset $OFFSET of $TOTAL total jobs"
+
+      - name: Scrape one batch
+        env:
+          PCD_CLOUD_CI: "1"     # runner IP is disposable -> bare-IP allowed here
+        run: |
+          BATCH="${{ github.event.inputs.batch }}"; BATCH=${BATCH:-120}
+          MAXR="${{ github.event.inputs.max_results }}"; MAXR=${MAXR:-10}
+          python scraper/scrape.py \
+            --offset ${{ steps.off.outputs.offset }} \
+            --limit "$BATCH" \
+            --max-results "$MAXR"
+
+      - name: Advance offset + commit data
+        run: |
+          BATCH="${{ github.event.inputs.batch }}"; BATCH=${BATCH:-120}
+          NEXT=$(( ${{ steps.off.outputs.offset }} + BATCH ))
+          if [ "$NEXT" -ge "${{ steps.off.outputs.total }}" ]; then NEXT=0; fi
+          echo "$NEXT" > data/.offset
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f data/pestcontrol.db data/.offset
+          COUNT=$(python -c "import sys; sys.path.insert(0,'scraper'); import db; print(db.count(db.connect()))")
+          git commit -m "scrape: batch @${{ steps.off.outputs.offset }} -> total ${COUNT} listings" || echo "nothing to commit"
+          git push
