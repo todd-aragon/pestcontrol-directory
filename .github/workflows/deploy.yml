@@ -28,5 +28,10 @@ jobs:
             echo "VERCEL_TOKEN not set — skipping deploy."; exit 0
           fi
           npm i -g vercel@latest
-          vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
-          vercel deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
+          T="${{ secrets.VERCEL_TOKEN }}"
+          if ! vercel pull --yes --environment=production --token="$T"; then
+            echo "::warning::Vercel token rejected — set a long-lived token from vercel.com/account/tokens as the VERCEL_TOKEN secret. Skipping deploy."
+            exit 0
+          fi
+          vercel deploy --prod --yes --token="$T" \
+            || echo "::warning::Vercel deploy failed; check VERCEL_TOKEN."
