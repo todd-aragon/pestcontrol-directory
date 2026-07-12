@@ -10,6 +10,7 @@ Run:
     python web/app.py            # http://127.0.0.1:5000
 """
 import json
+import os
 import re
 import sqlite3
 import sys
@@ -24,9 +25,14 @@ import db as dbmod  # noqa: E402  (schema + slugify live here)
 
 app = Flask(__name__)
 app.config["SITE_NAME"] = "Pest Control Directory"
-app.config["DOMAIN"] = "https://pestcontrol.example"  # set real domain later
-app.config["ADSENSE_CLIENT"] = ""   # e.g. ca-pub-XXXXXXXX
-app.config["GA_ID"] = ""            # e.g. G-XXXXXXXX
+# Canonical host for sitemap/canonicals/OG. Override with env DOMAIN when a
+# custom domain is attached (no trailing slash).
+app.config["DOMAIN"] = os.environ.get(
+    "DOMAIN", "https://pestcontrol-directory-sigma.vercel.app")
+app.config["ADSENSE_CLIENT"] = os.environ.get("ADSENSE_CLIENT", "")  # ca-pub-XXXX
+app.config["GA_ID"] = os.environ.get("GA_ID", "")                    # G-XXXXXXXX
+# Google Search Console verification token (the string in the meta-tag method).
+app.config["GSC_VERIFICATION"] = os.environ.get("GSC_VERIFICATION", "")
 
 CATEGORY_ICONS = {
     "General Pest Control": "fa-bug",
@@ -84,6 +90,8 @@ def inject_globals():
         "CATEGORY_ICONS": CATEGORY_ICONS,
         "ADSENSE_CLIENT": app.config["ADSENSE_CLIENT"],
         "GA_ID": app.config["GA_ID"],
+        "DOMAIN": app.config["DOMAIN"],
+        "GSC_VERIFICATION": app.config["GSC_VERIFICATION"],
         "cat_slug": slugify,
     }
 
@@ -204,23 +212,28 @@ def quote():
 # ---------------------------------------------------------------- SEO
 @app.route("/sitemap.xml")
 def sitemap():
+    from datetime import date
     d = get_db()
     base = app.config["DOMAIN"]
-    urls = [(base + "/", "1.0"),
-            (base + "/search", "0.9"),
-            (base + "/cities", "0.7"),
-            (base + "/categories", "0.7")]
+    today = date.today().isoformat()
+    # (loc, priority, changefreq)
+    urls = [(base + "/", "1.0", "daily"),
+            (base + "/search", "0.5", "weekly"),
+            (base + "/cities", "0.7", "weekly"),
+            (base + "/categories", "0.7", "weekly")]
     for r in d.execute("SELECT DISTINCT category FROM listings "
                        "WHERE category IS NOT NULL"):
-        urls.append((f"{base}/category/{slugify(r['category'])}", "0.7"))
+        urls.append((f"{base}/category/{slugify(r['category'])}", "0.8", "weekly"))
     for r in d.execute("SELECT DISTINCT city, state FROM listings"):
-        urls.append((f"{base}/{r['state'].lower()}/{slugify(r['city'])}", "0.7"))
+        urls.append((f"{base}/{r['state'].lower()}/{slugify(r['city'])}",
+                     "0.7", "weekly"))
     for r in d.execute("SELECT slug FROM listings"):
-        urls.append((f"{base}/listing/{r['slug']}", "0.8"))
+        urls.append((f"{base}/listing/{r['slug']}", "0.6", "monthly"))
     xml = ['<?xml version="1.0" encoding="UTF-8"?>',
            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
-    for loc, pri in urls:
-        xml.append(f"<url><loc>{loc}</loc><priority>{pri}</priority></url>")
+    for loc, pri, cf in urls:
+        xml.append(f"<url><loc>{loc}</loc><lastmod>{today}</lastmod>"
+                   f"<changefreq>{cf}</changefreq><priority>{pri}</priority></url>")
     xml.append("</urlset>")
     return Response("\n".join(xml), mimetype="application/xml")
 

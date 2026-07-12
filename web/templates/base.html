@@ -5,7 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
   <meta name="description" content="{% block description %}Find trusted local pest control, exterminators, termite, bed bug, rodent, mosquito and wildlife removal services near you.{% endblock %}">
-  <link rel="canonical" href="{% block canonical %}{% endblock %}">
+  {% set _path = self.canonical() | trim %}
+  <link rel="canonical" href="{{ DOMAIN }}{{ _path }}">
+  <meta name="robots" content="index, follow">
+  {% if GSC_VERIFICATION %}<meta name="google-site-verification" content="{{ GSC_VERIFICATION }}">{% endif %}
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ SITE_NAME }}">
+  <meta property="og:title" content="{{ self.title() | trim }}">
+  <meta property="og:description" content="{{ self.description() | trim }}">
+  <meta property="og:url" content="{{ DOMAIN }}{{ _path }}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{ self.title() | trim }}">
+  <meta name="twitter:description" content="{{ self.description() | trim }}">
 
   <!-- Tailwind (Play CDN for dev; compile to /static/css/output.css for prod) -->
   <script src="https://cdn.tailwindcss.com"></script>
