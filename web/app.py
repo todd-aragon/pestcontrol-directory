@@ -63,6 +63,16 @@ def close_db(_exc):
         d.close()
 
 
+@app.after_request
+def edge_cache(resp):
+    """Let Vercel's CDN cache GET pages (content only changes on redeploy).
+    Big speed + crawl-budget win vs re-running the function every hit."""
+    if request.method == "GET" and resp.status_code == 200:
+        resp.headers["Cache-Control"] = (
+            "public, s-maxage=3600, stale-while-revalidate=86400")
+    return resp
+
+
 def slugify(s):
     return dbmod.slugify(s or "")
 

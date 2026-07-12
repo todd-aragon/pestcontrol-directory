@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
   <meta name="description" content="{% block description %}Find trusted local pest control, exterminators, termite, bed bug, rodent, mosquito and wildlife removal services near you.{% endblock %}">
-  {% set _path = self.canonical() | trim %}
+  {% set _path = request.path %}
   <link rel="canonical" href="{{ DOMAIN }}{{ _path }}">
-  <meta name="robots" content="index, follow">
+  <meta name="robots" content="{% block robots %}index, follow{% endblock %}">
   {% if GSC_VERIFICATION %}<meta name="google-site-verification" content="{{ GSC_VERIFICATION }}">{% endif %}
 
   <!-- Open Graph / Twitter -->
@@ -20,20 +20,17 @@
   <meta name="twitter:title" content="{{ self.title() | trim }}">
   <meta name="twitter:description" content="{{ self.description() | trim }}">
 
-  <!-- Tailwind (Play CDN for dev; compile to /static/css/output.css for prod) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { theme: { extend: {
-      colors: { primary: '#1f2937', primaryDark: '#111827', secondary: '#112231',
-                gradient: '#112231', accent: '#10b981' },
-      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'],
-                    heading: ['Inter', 'system-ui', 'sans-serif'] }
-    } } }
-  </script>
+  <!-- Compiled Tailwind (static, fast — no in-browser compiler) -->
+  <link rel="stylesheet" href="/static/css/output.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>body{font-family:'Inter',sans-serif}</style>
+
+  <!-- Favicon (inline SVG shield, no extra request) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231f2937'/%3E%3Ctext x='50' y='72' font-size='60' text-anchor='middle' fill='%2310b981'%3E%F0%9F%9B%A1%3C/text%3E%3C/svg%3E">
+  <meta property="og:image" content="{{ DOMAIN }}/static/og.png">
 
   {% if GA_ID %}
   <script async src="https://www.googletagmanager.com/gtag/js?id={{ GA_ID }}"></script>

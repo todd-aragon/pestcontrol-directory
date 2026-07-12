@@ -20,4 +20,16 @@
   <div class="space-y-3 max-w-3xl">{% for f in copy.faq %}<details class="bg-white border rounded-xl p-4"><summary class="font-semibold cursor-pointer">{{ f.q }}</summary><p class="mt-2 text-gray-600 text-sm">{{ f.a }}</p></details>{% endfor %}</div>
   {% endif %}
 </div>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+{"@type":"ListItem","position":1,"name":"Home","item":"{{ DOMAIN }}/"},
+{"@type":"ListItem","position":2,"name":"Services","item":"{{ DOMAIN }}/categories"},
+{"@type":"ListItem","position":3,"name":{{ name|tojson }},"item":"{{ DOMAIN }}/category/{{ slug }}"}]}
+</script>
+{% if copy and copy.faq %}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{% for f in copy.faq %}{"@type":"Question","name":{{ f.q|tojson }},"acceptedAnswer":{"@type":"Answer","text":{{ f.a|tojson }}}}{{ "," if not loop.last }}{% endfor %}]}
+</script>
+{% endif %}
 {% endblock %}
