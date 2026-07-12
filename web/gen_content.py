@@ -33,7 +33,12 @@ GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 
 SYS = ("You write concise, genuinely useful, non-spammy copy for a pest-control "
        "directory website. Plain, trustworthy tone. No emojis, no hype, no made-up "
-       "statistics or fake guarantees. Return ONLY valid minified JSON.")
+       "statistics or fake guarantees. NEVER state a specific number of providers, "
+       "specialists, companies, or quotes (do not write phrases like 'three "
+       "specialists' or 'our directory of N'). NEVER mention 'free quotes', "
+       "'get a quote', or contacting for quotes — the site has no quote form; "
+       "readers browse listings and call businesses directly. "
+       "Return ONLY valid minified JSON.")
 
 
 def _extract_json(text: str) -> dict:
@@ -100,18 +105,18 @@ def gemini(prompt: str) -> dict:
 
 
 def prompt_category(name, n):
-    return (f"Service: '{name}' (pest control). {n} providers listed. "
+    return (f"Service: '{name}' (pest control). "
             "Return JSON {\"intro\": <120-180 word paragraph explaining what this "
             "service covers, typical signs you need it, and what to look for in a "
             "provider>, \"faq\": [3 items of {\"q\":..., \"a\":<40-70 words>}]}.")
 
 
 def prompt_city(city, state, n, cats):
-    return (f"City: {city}, {state}. {n} pest-control businesses listed "
-            f"(services: {', '.join(cats)}). Return JSON {{\"intro\": <120-180 word "
-            "paragraph about choosing pest control in this specific city — mention "
-            "common local pests/climate factors generally, what reviews to check, "
-            "and getting quotes>, \"faq\": [3 items of {\"q\":..., \"a\":<40-70 words>}]}.")
+    return (f"City: {city}, {state}. Services available: {', '.join(cats)}. "
+            "Return JSON {\"intro\": <120-180 word paragraph about choosing pest "
+            "control in this specific city — mention common local pests/climate "
+            "factors generally, and what to check in reviews before hiring>, "
+            "\"faq\": [3 items of {\"q\":..., \"a\":<40-70 words>}]}.")
 
 
 def save(conn, key, kind, data):
