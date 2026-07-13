@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ g.title }} | {{ SITE_NAME }}{% endblock %}
+{% block description %}{{ g.description }}{% endblock %}
+{% block canonical %}/guides/{{ g.slug }}{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-br from-primary to-gradient text-white">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <nav class="text-sm text-white/70 mb-3"><a href="/" class="hover:text-white">Home</a> / <a href="/guides" class="hover:text-white">Guides</a> / <span class="text-white">{{ g.title }}</span></nav>
+    <h1 class="text-3xl md:text-4xl font-extrabold">{{ g.title }}</h1>
+  </div>
+</div>
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  {% if body.intro %}<p class="text-lg text-gray-700 leading-relaxed mb-8">{{ body.intro }}</p>{% endif %}
+
+  {% for s in body.sections %}
+  <section class="mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-3">{{ s.heading }}</h2>
+    <p class="text-gray-700 leading-relaxed">{{ s.content }}</p>
+  </section>
+  {% endfor %}
+
+  <!-- CTA into the directory -->
+  <div class="bg-primary/5 border border-primary/10 rounded-2xl p-6 my-10 text-center">
+    <p class="font-semibold text-gray-900">Need a professional?</p>
+    <p class="text-gray-600 text-sm mt-1">Compare local {{ g.category|lower }} providers with reviews and ratings.</p>
+    <a href="/category/{{ cat_slug(g.category) }}" class="inline-block mt-4 bg-primary hover:bg-primaryDark text-white font-semibold px-6 py-2.5 rounded-xl">Find {{ g.category }} pros</a>
+  </div>
+
+  {% if body.faq %}
+  <section class="mb-10">
+    <h2 class="text-2xl font-bold text-gray-900 mb-4">Frequently asked questions</h2>
+    <div class="space-y-3">
+      {% for f in body.faq %}
+      <details class="bg-white border rounded-xl p-4"><summary class="font-semibold cursor-pointer">{{ f.q }}</summary><p class="mt-2 text-gray-600 text-sm">{{ f.a }}</p></details>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if others %}
+  <h2 class="text-xl font-bold text-gray-900 mb-4">More guides</h2>
+  <div class="grid sm:grid-cols-2 gap-3">
+    {% for o in others %}<a href="/guides/{{ o.slug }}" class="flex items-center gap-2 bg-white border rounded-lg px-4 py-3 text-sm hover:border-primary hover:text-primary"><i class="fas fa-book text-primary/60"></i> {{ o.title }}</a>{% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":{{ g.title|tojson }},
+"description":{{ g.description|tojson }},"author":{"@type":"Organization","name":{{ SITE_NAME|tojson }}},
+"publisher":{"@type":"Organization","name":{{ SITE_NAME|tojson }}},"mainEntityOfPage":"{{ DOMAIN }}/guides/{{ g.slug }}"}
+</script>
+{% if body.faq %}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{% for f in body.faq %}{"@type":"Question","name":{{ f.q|tojson }},"acceptedAnswer":{"@type":"Answer","text":{{ f.a|tojson }}}}{{ "," if not loop.last }}{% endfor %}]}
+</script>
+{% endif %}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+{"@type":"ListItem","position":1,"name":"Home","item":"{{ DOMAIN }}/"},
+{"@type":"ListItem","position":2,"name":"Guides","item":"{{ DOMAIN }}/guides"},
+{"@type":"ListItem","position":3,"name":{{ g.title|tojson }},"item":"{{ DOMAIN }}/guides/{{ g.slug }}"}]}
+</script>
+{% endblock %}

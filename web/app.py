@@ -285,6 +285,27 @@ def categories():
     return render_template("categories.html", rows=rows)
 
 
+@app.route("/guides")
+def guides():
+    rows = get_db().execute(
+        "SELECT slug, title, description, category FROM guides "
+        "ORDER BY title").fetchall()
+    return render_template("guides.html", rows=rows)
+
+
+@app.route("/guides/<slug>")
+def guide(slug):
+    row = get_db().execute(
+        "SELECT * FROM guides WHERE slug = ?", (slug,)).fetchone()
+    if not row:
+        abort(404)
+    body = json.loads(row["body"]) if row["body"] else {}
+    others = get_db().execute(
+        "SELECT slug, title FROM guides WHERE slug != ? ORDER BY RANDOM() LIMIT 6",
+        (slug,)).fetchall()
+    return render_template("guide.html", g=row, body=body, others=others)
+
+
 @app.route("/search")
 def search():
     from urllib.parse import urlencode
@@ -331,6 +352,9 @@ def sitemap():
     for r in d.execute("SELECT DISTINCT category FROM listings "
                        "WHERE category IS NOT NULL"):
         urls.append((f"{base}/category/{slugify(r['category'])}", "0.8", "weekly"))
+    urls.append((base + "/guides", "0.7", "weekly"))
+    for r in d.execute("SELECT slug FROM guides"):
+        urls.append((f"{base}/guides/{r['slug']}", "0.7", "monthly"))
     for r in d.execute("SELECT DISTINCT state FROM listings"):
         urls.append((f"{base}/state/{r['state'].lower()}", "0.7", "weekly"))
     for r in d.execute("SELECT DISTINCT city, state FROM listings"):

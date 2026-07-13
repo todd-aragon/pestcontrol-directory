@@ -38,6 +38,16 @@ CREATE TABLE IF NOT EXISTS content (
     faq          TEXT,               -- JSON [{q,a},...]
     generated_at TEXT DEFAULT (datetime('now'))
 );
+
+-- Long-form informational guides (top-of-funnel SEO content).
+CREATE TABLE IF NOT EXISTS guides (
+    slug         TEXT PRIMARY KEY,
+    title        TEXT,
+    description  TEXT,
+    category     TEXT,               -- related service category (for cross-links)
+    body         TEXT,               -- JSON {intro, sections:[{heading,content}], faq:[{q,a}]}
+    generated_at TEXT DEFAULT (datetime('now'))
+);
 """
 
 
