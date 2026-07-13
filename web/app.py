@@ -130,7 +130,7 @@ def home():
     order = {"reviews": "reviews DESC", "rating": "rating DESC, reviews DESC",
              "name": "name ASC"}.get(sort, "reviews DESC")
     listings = d.execute(
-        f"SELECT * FROM listings ORDER BY {order} LIMIT 60").fetchall()
+        f"SELECT * FROM listings ORDER BY {order} LIMIT 24").fetchall()
     cities = d.execute(
         "SELECT city, state, COUNT(*) n FROM listings "
         "GROUP BY city, state ORDER BY n DESC LIMIT 24").fetchall()
@@ -249,23 +249,33 @@ def categories():
 
 @app.route("/search")
 def search():
+    from urllib.parse import urlencode
     q = (request.args.get("q") or "").strip()
     cat = (request.args.get("category") or "").strip()
     loc = (request.args.get("city") or "").strip()
-    sql = "SELECT * FROM listings WHERE 1=1"
+    where = "WHERE 1=1"
     args = []
     if q:
-        sql += " AND (name LIKE ? OR city LIKE ?)"
+        where += " AND (name LIKE ? OR city LIKE ?)"
         args += [f"%{q}%", f"%{q}%"]
     if cat:
-        sql += " AND category = ?"
+        where += " AND category = ?"
         args.append(cat)
     if loc:
-        sql += " AND (city LIKE ? OR state LIKE ?)"
+        where += " AND (city LIKE ? OR state LIKE ?)"
         args += [f"%{loc}%", f"%{loc}%"]
-    sql += " ORDER BY reviews DESC LIMIT 200"
-    rows = get_db().execute(sql, args).fetchall()
-    return render_template("search.html", rows=rows, q=q, cat=cat, loc=loc)
+    d = get_db()
+    total = d.execute(f"SELECT COUNT(*) FROM listings {where}", args).fetchone()[0]
+    page = _page()
+    rows = d.execute(
+        f"SELECT * FROM listings {where} ORDER BY reviews DESC LIMIT ? OFFSET ?",
+        args + [PER_PAGE, (page - 1) * PER_PAGE]).fetchall()
+    qs = urlencode({k: v for k, v in
+                    (("q", q), ("category", cat), ("city", loc)) if v})
+    base_url = "/search?" + qs if qs else "/search"
+    return render_template("search.html", rows=rows, q=q, cat=cat, loc=loc,
+                           total=total, pg=_pageinfo(page, total),
+                           base_url=base_url)
 
 
 # ---------------------------------------------------------------- SEO
