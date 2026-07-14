@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 from flask import (Flask, abort, g, redirect, render_template, request,
-                   url_for, Response)
+                   url_for, Response, send_from_directory)
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scraper"))
@@ -369,6 +369,13 @@ def sitemap():
                    f"<changefreq>{cf}</changefreq><priority>{pri}</priority></url>")
     xml.append("</urlset>")
     return Response("\n".join(xml), mimetype="application/xml")
+
+
+@app.route("/favicon.ico")
+def favicon():
+    # Google's favicon crawler checks the site root by convention.
+    return send_from_directory(app.static_folder, "favicon.ico",
+                               mimetype="image/x-icon")
 
 
 @app.route("/robots.txt")
