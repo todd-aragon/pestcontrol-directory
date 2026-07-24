@@ -10,7 +10,7 @@
       <option value="">All services</option>
       {% for c in ALL_CATEGORIES %}<option {% if c==cat %}selected{% endif %}>{{ c }}</option>{% endfor %}
     </select>
-    <input name="city" value="{{ loc }}" placeholder="City or state" class="px-4 py-3 outline-none border-t sm:border-t-0 sm:border-l">
+    <input name="city" value="{{ loc }}" placeholder="Zip code or City, State" class="px-4 py-3 outline-none border-t sm:border-t-0 sm:border-l">
     <button class="bg-primary hover:bg-primaryDark text-white font-semibold px-8 py-3 rounded-xl">Search</button>
   </form>
   <h1 class="text-xl font-bold mb-6">{{ total }} result{{ '' if total==1 else 's' }}</h1>

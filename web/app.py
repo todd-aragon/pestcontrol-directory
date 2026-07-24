@@ -306,6 +306,39 @@ def guide(slug):
     return render_template("guide.html", g=row, body=body, others=others)
 
 
+# abbrev + full-name -> 2-letter code, for parsing "City, State" input.
+_STATE_LOOKUP = {abbr.lower(): abbr for abbr in STATE_NAMES}
+_STATE_LOOKUP.update({name.lower(): abbr for abbr, name in STATE_NAMES.items()})
+
+
+def _parse_location(loc):
+    """Turn a free-text location into a precise SQL fragment + args.
+
+    Supports (in priority order):
+      * ZIP code (5 digits, optional +4) -> matches the zip inside `address`.
+      * "City, State" -> exact city + state, so Springfield IL never matches
+        Springfield MO.
+      * bare text -> loose fallback (city or state contains the text).
+    """
+    zip_match = re.fullmatch(r"(\d{5})(?:-\d{4})?", loc)
+    if zip_match:
+        z = zip_match.group(1)
+        # zip is a standalone token in the address ("..., NY 10023"); the
+        # leading space avoids matching 5-digit street numbers.
+        return " AND address LIKE ?", [f"% {z}%"]
+    if "," in loc:
+        city_part, _, state_part = loc.rpartition(",")
+        city_part = city_part.strip()
+        abbr = _STATE_LOOKUP.get(state_part.strip().lower())
+        if city_part and abbr:
+            return " AND city = ? AND state = ?", [city_part, abbr]
+    # bare state name/abbrev -> filter by state only
+    abbr = _STATE_LOOKUP.get(loc.lower())
+    if abbr:
+        return " AND state = ?", [abbr]
+    return " AND (city LIKE ? OR state LIKE ?)", [f"%{loc}%", f"%{loc}%"]
+
+
 @app.route("/search")
 def search():
     from urllib.parse import urlencode
@@ -321,8 +354,9 @@ def search():
         where += " AND category = ?"
         args.append(cat)
     if loc:
-        where += " AND (city LIKE ? OR state LIKE ?)"
-        args += [f"%{loc}%", f"%{loc}%"]
+        frag, frag_args = _parse_location(loc)
+        where += frag
+        args += frag_args
     d = get_db()
     total = d.execute(f"SELECT COUNT(*) FROM listings {where}", args).fetchone()[0]
     page = _page()
